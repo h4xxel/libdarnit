@@ -126,8 +126,9 @@ unsigned int tpw_keysym_translate(unsigned int vk);
 
 LRESULT CALLBACK tpw_message_process(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	TPW_EVENT event;
+	WORD ht;
+	static int hidden_cursor = 0;
 	short keys[2];
-	#warning tpw_message_process(): Not tested yet
 
 	switch (uMsg) {
 		case WM_ACTIVATE:
@@ -141,7 +142,7 @@ LRESULT CALLBACK tpw_message_process(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 				case SC_MONITORPOWER:
 					return 0;
 				default:
-					return 1;
+					return DefWindowProc(hWnd, uMsg, wParam, lParam);
 			}
 		case WM_CLOSE:
 			event.type = TPW_EVENT_TYPE_QUIT;
@@ -167,46 +168,50 @@ LRESULT CALLBACK tpw_message_process(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 			tpw.modifiers |= tpw_modifier(wParam);
 			tpw.modifiers ^= tpw_modifier(wParam);
 			break;
+		case WM_LBUTTONDOWN:
+			event.type = TPW_EVENT_TYPE_MOUSEBTN_DOWN;
+			event.mouse.button = TPW_MOUSE_BUTTON_LEFT;
+			break;
 		case WM_MBUTTONDOWN:
 			event.type = TPW_EVENT_TYPE_MOUSEBTN_DOWN;
-			switch (wParam) {
-				case MK_LBUTTON:
-					event.mouse.button = TPW_MOUSE_BUTTON_LEFT;
-					break;
-				case MK_MBUTTON:
-					event.mouse.button = TPW_MOUSE_BUTTON_MIDDLE;
-					break;
-				case MK_RBUTTON:
-					event.mouse.button = TPW_MOUSE_BUTTON_RIGHT;
-					break;
-				default:
-					return 0;
-			}
+			event.mouse.button = TPW_MOUSE_BUTTON_MIDDLE;
+			break;
+		case WM_RBUTTONDOWN:
+			event.type = TPW_EVENT_TYPE_MOUSEBTN_DOWN;
+			event.mouse.button = TPW_MOUSE_BUTTON_RIGHT;
+			break;
+		case WM_LBUTTONUP:
+			event.type = TPW_EVENT_TYPE_MOUSEBTN_UP;
+			event.mouse.button = TPW_MOUSE_BUTTON_LEFT;
 			break;
 		case WM_MBUTTONUP:
 			event.type = TPW_EVENT_TYPE_MOUSEBTN_UP;
-			switch (wParam) {
-				case MK_LBUTTON:
-					event.mouse.button = TPW_MOUSE_BUTTON_LEFT;
-					break;
-				case MK_MBUTTON:
-					event.mouse.button = TPW_MOUSE_BUTTON_MIDDLE;
-					break;
-				case MK_RBUTTON:
-					event.mouse.button = TPW_MOUSE_BUTTON_RIGHT;
-					break;
-				default:
-					return 0;
-			}
+			event.mouse.button = TPW_MOUSE_BUTTON_MIDDLE;
+			break;
+		case WM_RBUTTONUP:
+			event.type = TPW_EVENT_TYPE_MOUSEBTN_UP;
+			event.mouse.button = TPW_MOUSE_BUTTON_RIGHT;
 			break;
 		case WM_MOUSEWHEEL:
 			event.type = TPW_EVENT_TYPE_MOUSEBTN_DOWN;
 			event.mouse.button = (GET_WHEEL_DELTA_WPARAM(wParam) < 0) ? TPW_MOUSE_BUTTON_WHEEL_UP : TPW_MOUSE_BUTTON_WHEEL_DOWN;
+			DefWindowProc(hWnd, uMsg, wParam, lParam);
 			break;
 		case WM_MOUSEMOVE:
 			event.type = TPW_EVENT_TYPE_MOUSEMOVE;
 			event.mouse.x = GET_X_LPARAM(lParam);
 			event.mouse.y = GET_Y_LPARAM(lParam);
+			DefWindowProc(hWnd, uMsg, wParam, lParam);
+			break;
+		case WM_SETCURSOR:
+			ht = LOWORD(lParam);
+			if (ht == HTCLIENT && !hidden_cursor && tpw.hide_cursor) {
+				hidden_cursor = 1;
+				ShowCursor(FALSE);
+			} else if (ht != HTCLIENT && hidden_cursor) {
+				hidden_cursor = 0;
+				ShowCursor(TRUE);
+			}
 			break;
 
 		default:
@@ -220,8 +225,6 @@ LRESULT CALLBACK tpw_message_process(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 
 
 void tpw_event_loop() {
-	MSG msg;
-	#warning tpw_event_loop(): Probably incomplete implementation
 	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
@@ -250,7 +253,7 @@ void tpw_joystick_enable(TPW_ENBOOL enable) {
 
 const char *tpw_joystick_name(int i) {
 	#warning tpw_joystick_name(): Not implemented yet
-	return;
+	return "Blah";
 }
 
 

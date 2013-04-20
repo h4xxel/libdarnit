@@ -26,18 +26,30 @@ freely, subject to the following restrictions:
 
 
 int tpw_init_platform() {
-	#warning tpw_init_platform(): Not tested yet
-
+	DEVMODE devmode;
+	int i;
+	
+	tpw.screen_res = NULL;
 	ZeroMemory(tpw.keys, 256);
 	tpw.unicode_key = 0;
 	tpw.modifiers = 0;
+	tpw.hide_cursor = 0;
+
+	for (i = 0; EnumDisplaySettings(NULL, i, &devmode); i++) {
+		tpw.screen_res = realloc(tpw.screen_res, sizeof(TPW_RECT *) * (i + 2));
+		tpw.screen_res[i] = malloc(sizeof(TPW_RECT));
+		tpw.screen_res[i]->x = tpw.screen_res[i]->y = 0;
+		tpw.screen_res[i]->w = devmode.dmPelsWidth;
+		tpw.screen_res[i]->h = devmode.dmPelsHeight;
+	}
+
+	if (i > 0) tpw.screen_res[i] = NULL;
+
 	return 1;
 }
 
 
 int tpw_window_create(const char *title, unsigned int window_w, unsigned int window_h, unsigned int fullscreen, const unsigned int bpp) {
-	#warning tpw_window_create(): Not tested yet
-
 	GLuint PixelFormat;
 	WNDCLASS wc;
 	DWORD dwExStyle;
@@ -61,7 +73,7 @@ int tpw_window_create(const char *title, unsigned int window_w, unsigned int win
 	tpw.fullscreen = fullscreen;
 
 	tpw.hInstance = GetModuleHandle(NULL);
-	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc = tpw_message_process;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -93,7 +105,6 @@ int tpw_window_create(const char *title, unsigned int window_w, unsigned int win
 		} else {
 			dwExStyle = WS_EX_APPWINDOW;
 			dwStyle = WS_POPUP;
-			ShowCursor(FALSE);
 		}
 	} else {
 		nofullscreen:
@@ -154,8 +165,13 @@ void tpw_sleep(unsigned int msec) {
 
 
 unsigned int tpw_ticks() {
-	#warning tpw_ticks(): Not implemented yet
-	return 0;
+	unsigned long long i, j;
+	QueryPerformanceCounter((LARGE_INTEGER *) &i);
+	QueryPerformanceFrequency((LARGE_INTEGER *) &j);
+	j = j / 1000;
+	if (j == 0)
+		j = 1;
+	return i / j;
 }
 
 
@@ -186,8 +202,7 @@ const char *tpw_key_name_get(int sym) {
 
 
 TPW_RECT **tpw_videomodes_list() {
-	#warning tpw_videomodes_list(): Not implemented yet
-	return (void *) -1;
+	return tpw.screen_res;
 }
 
 
@@ -198,6 +213,7 @@ void tpw_input_unicode(int enable) {
 
 
 void tpw_cursor_show(unsigned int show) {
+	tpw.hide_cursor = !show;
 	ShowCursor((show) ? TRUE : FALSE);
 	return;
 }
@@ -228,6 +244,5 @@ void tpw_quit() {
 		DestroyWindow(tpw.hWnd);
 	UnregisterClass(WINDOW_CLASS_NAME, tpw.hInstance);
 
-	#warning tpw_quit(): Not tested yet
 	return;
 }
