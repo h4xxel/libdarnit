@@ -248,6 +248,12 @@ void tpw_joystick_enable(TPW_ENBOOL enable) {
 }
 
 
+const char *tpw_joystick_name(int i) {
+	#warning tpw_joystick_name(): Not implemented yet
+	return;
+}
+
+
 unsigned int tpw_keys_modifiers() {
 	return tpw.modifiers;
 }
@@ -258,7 +264,7 @@ unsigned int tpw_keysym_translate(unsigned int vk) {
 }
 
 
-unsigned int tpw_modifiers(unsigned int vk) {
+unsigned int tpw_modifier(unsigned int vk) {
 	switch (vk) {
 		case 0xA0:
 			return TPW_KEY_MOD_LSHIFT;
